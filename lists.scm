@@ -460,9 +460,8 @@
 (define combination
   (lambda (n pool)
     (cond
-     [(zero? n)
-      (quote ())]
-     [(null? pool)
+     [(or (zero? n)
+          (null? pool))
       (quote ())]
      [(= n (length pool))
       (cons pool (quote ()))]
@@ -500,3 +499,120 @@
 ;;     Note that we do not want permutations of the group members; i.e. ((ALDO BEAT) ...) is the same solution as ((BEAT ALDO) ...). However, we make a difference between ((ALDO BEAT) (CARLA DAVID) ...) and ((CARLA DAVID) (ALDO BEAT) ...).
 ;;     
 ;;     You may find more about this combinatorial problem in a good book on discrete mathematics under the term "multinomial coefficients".
+(define add-to-group
+  (lambda (lst group)
+    (let AG ((mgroup group))
+      (if (null? mgroup)
+          (quote ())
+          (append (surround (cons lst
+                                  (car mgroup)))
+                  (AG (cdr mgroup)))))))
+(define group-step
+  (lambda (orig-list split-list set)
+    (let GSTEP ((mset set))
+      (if (null? mset)
+          (quote ())
+          (append (add-to-group (car mset)
+                                (group (rm-with-list (car mset)
+                                                     orig-list)
+                                       split-list))
+                  (GSTEP (cdr mset)))))))
+(define group
+  (lambda (orig-list split-list)
+    (cond
+     [(null? (cdr split-list))
+      (surround (surround orig-list))]
+     [else
+      (group-step orig-list
+                  (cdr split-list)
+                  (combination (car split-list) orig-list))])))
+(define surround
+  (lambda (thing)
+    (cons thing
+          (quote ()))))
+(define (group3 group-of-9) (group group-of-9 '(2 3 4)))
+(define rm-with-element
+  (lambda (elem list)
+    (let RE ((l list))
+      (cond
+       [(null? l) (quote ())]
+       [(eq? elem (car l)) (cdr l)]
+       [else (cons (car l)
+                   (RE (cdr l)))]))))
+(define rm-with-list
+  (lambda (elems list)
+    (cond
+     [(null? elems)
+      list]
+     [else (rm-with-list (cdr elems)
+                         (rm-with-element (car elems) list))])))
+(define rm-with-set
+  (lambda (set list)
+    (if (null? set)
+        list
+        (rm-with-set (cdr set)
+                     (rm-with-list (car set)
+                                   list)))))
+
+;; P28 (**) Sorting a list of lists according to length of sublists
+;;     a) We suppose that a list contains elements that are lists themselves. The objective is to sort the elements of this list according to their length. E.g. short lists first, longer lists later, or vice versa.
+;;     
+;;     Example:
+;;     * (lsort '((a b c) (d e) (f g h) (d e) (i j k l) (m n) (o)))
+;;     ((O) (D E) (D E) (M N) (A B C) (F G H) (I J K L))
+;;     
+;;     b) Again, we suppose that a list contains elements that are lists themselves. But this time the objective is to sort the elements of this list according to their length frequency; i.e., in the default, where sorting is done ascendingly, lists with rare lengths are placed first, others with a more frequent length come later.
+;;     
+;;     Example:
+;;     * (lfsort '((a b c) (d e) (f g h) (d e) (i j k l) (m n) (o)))
+;;     ((i j k l) (o) (a b c) (f g h) (d e) (d e) (m n))
+;;     
+;;     Note that in the above example, the first two lists in the result have length 4 and 1, both lengths appear just once. The third and forth list have length 3 which appears twice (there are two list of this length). And finally, the last three lists have length 2. This is the most frequent length.
+(define lsort-helper
+  (lambda (list sorted-set)
+    (let ((list-length (length list)))
+      (let LH ((set sorted-set))
+        (cond
+         [(null? set)
+          (surround list)]
+         [(not (< (length (car set))
+                  list-length))
+          (cons list set)]
+         [else (cons (car set)
+                     (LH (cdr set)))])))))
+(define lsort
+  (lambda (set)
+    (if (null? set)
+        (quote ())
+        (lsort-helper (car set)
+                      (lsort (cdr set))))))
+(define put-set
+  (lambda (list set)
+    (let ((list-length (length list)))
+      (let P ((mset set))
+        (cond
+         [(null? mset)
+          (surround (surround list))]
+         [(eq? list-length
+               (length (caar mset)))
+          (cons (cons list
+                      (car mset))
+                (cdr mset))]
+         [else (cons (car mset)
+                     (P (cdr mset)))])))))
+(define lfsort-helper
+  (lambda (set transformed-set)
+    (if (null? set)
+        transformed-set
+        (lfsort-helper (cdr set)
+                       (put-set (car set)
+                                transformed-set)))))
+(define lfsort-flatten
+  (lambda (group)
+    (if (null? group)
+        (quote ())
+        (append (car group)
+                (lfsort-flatten (cdr group))))))
+(define lfsort
+  (lambda (set)
+    (lfsort-flatten (lsort (lfsort-helper set (quote ()))))))
