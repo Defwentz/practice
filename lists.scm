@@ -201,29 +201,38 @@
 ;;     Example:
 ;;     * (encode-modified '(a a a a b c c a a d e e e e))
 ;;     ((4 A) B (2 C) (2 A) D (4 E))
-(define cons-encode-modified
+(define em-cons-style
+  (lambda (count elem)
+    (cons count
+              (cons elem
+                    (quote ())))))
+(define (em-one elem) elem)
+(define encode-cons
+  (lambda (one-style cons-style)
     (lambda (elem count)
       (cond
        [(zero? (sub1 count))
-        elem]
+        (one-style elem)]
        [else
-        (cons count
-              (cons elem
-                    (quote ())))])))
-(define encode-modified
-  (lambda (lat)
+        (cons-style count elem)]))))
+(define em-cons (encode-cons em-one em-cons-style))
+(define new-encode
+  (lambda (cons-style)
+    (lambda (lat)
     (letrec ((E (lambda (l elem count)
                   (cond
                    [(null? l)
-                    (cons (cons-encode-modified elem count)
+                    (cons (cons-style elem count)
                           (quote ()))]
                    [(eq? (car l) elem)
                     (E (cdr l) elem (add1 count))]
-                   [else (cons (cons-encode-modified elem count)
+                   [else (cons (cons-style elem count)
                                (E (cdr l) (car l) 1))]))))
       (cond
        [(null? lat) (quote ())]
-       [else (E (cdr lat) (car lat) 1)]))))
+       [else (E (cdr lat) (car lat) 1)])))))
+(define encode-modified
+  (new-encode em-cons))
 (encode-modified '(a a a a b c c a a d e e e e))
 
 ;; P12 (**) Decode a run-length encoded list.
