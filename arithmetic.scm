@@ -111,3 +111,81 @@
                   (expt pn
                         (sub1 mn)))
                (P (cdr pfct-mult))))))))
+
+;; P38 (*) Compare the two methods of calculating Euler's totient function.
+;;     Use the solutions of problems P34 and P37 to compare the algorithms. Take the number of logical inferences as a measure for efficiency. Try to calculate phi(10090) as an example.
+;; First look, my totient-phi2 is much slower.
+
+;; P39 (*) A list of prime numbers.
+;;     Given a range of integers by its lower and upper limit, construct a list of all prime numbers in that range.
+(define list-of-prime
+  (lambda (bot top)
+    (cond
+     [(> bot top)
+      (quote ())]
+     [(is-prime bot)
+      (cons bot (list-of-prime (add1 bot) top))]
+     [else (list-of-prime (add1 bot) top)])))
+
+;; P40 (**) Goldbach's conjecture.
+;;     Goldbach's conjecture says that every positive even number greater than 2 is the sum of two prime numbers. Example: 28 = 5 + 23. It is one of the most famous facts in number theory that has not been proved to be correct in the general case. It has been numerically confirmed up to very large numbers (much larger than we can go with our Prolog system). Write a predicate to find the two prime numbers that sum up to a given even integer.
+;;     Example:
+;;     * (goldbach 28)
+;;     (5 23)
+(define goldbach
+  (lambda (num)
+    (if (= num 2) '(1 1)
+        (let G ((n (- num 2))
+                (m 2))
+          (cond
+           [(and [is-prime n]
+                 [is-prime m])
+            (cons m (surround n))]
+           [else (G (sub1 n) (add1 m))])))))
+
+;; P41 (**) A list of Goldbach compositions.
+;;     Given a range of integers by its lower and upper limit, print a list of all even numbers and their Goldbach composition.
+;;     Example:
+;;     * (goldbach-list 9 20)
+;;     10 = 3 + 7
+;;     12 = 5 + 7
+;;     14 = 3 + 11
+;;     16 = 3 + 13
+;;     18 = 5 + 13
+;;     20 = 3 + 17
+;;     
+;;     In most cases, if an even number is written as the sum of two prime numbers, one of them is very small. Very rarely, the primes are both bigger than say 50. Try to find out how many such cases there are in the range 2..3000.
+;;     
+;;     Example (for a print limit of 50):
+;;     * (goldbach-list 1 2000 50)
+;;     992 = 73 + 919
+;;     1382 = 61 + 1321
+;;     1856 = 67 + 1789
+;;     1928 = 61 + 1867
+(define goldbach-list
+  (lambda (bot top limit)
+    (define if-good-print
+      (lambda (c)
+        (let ((n (car c))
+              (m (cadr c)))
+          (if (and (> n limit)
+                   (> m limit))
+              (begin
+                (display (string-append (number->string (+ m n))
+                                        " = "
+                                        (number->string n)
+                                        " + "
+                                        (number->string m)))
+                (newline))))))
+    (define get-even
+      (lambda (deal n)
+        (if (zero? (remainder n 2)) n
+            (deal n))))
+    (let ((bot (get-even add1 bot))
+          (top (get-even sub1 top)))
+      (let GL ((n bot))
+        (if (= n top)
+            (newline)
+            (begin
+              (if-good-print (goldbach n))
+              (GL (+ 2 n))))))))
