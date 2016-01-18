@@ -12,6 +12,15 @@
 ;;     fail true fail
 ;;     fail fail fail
 ;; (table 'A 'B '(and A (or A B)))
+;;     P47 (*) Truth tables for logical expressions (2).
+;;     Continue problem P46 by defining and/2, or/2, etc as being operators. This allows to write the logical expression in the more natural way, as in the example: A and (A or not B). Define operator precedence as usual; i.e. as in Java.
+;;     Example:
+;;     * table(A,B, A and (A or not B)).
+;;     true true true
+;;     true fail true
+;;     fail true fail
+;;     fail fail fail
+;; (table 'A 'B '(A and (A or (not B))))
 
 (define table
   (lambda (a b sexp)
@@ -67,6 +76,10 @@
           (cnt i)))))
 (define empty-cnt 0)
 (define (look cnt i) (cnt i))
+(define get-op cadr)
+(define get-first-sexp car)
+(define get-second-sexp caddr)
+
 (define my-eval
   (lambda (sexp cnt)
     (cond
@@ -74,8 +87,12 @@
       (if (boolean? sexp)
           sexp
           (look cnt sexp))]
-     [(atom? sexp)
-      (look cnt sexp)]
-     [else ((operator (car sexp))
-            (my-eval (cadr sexp) cnt)
-            (my-eval (caddr sexp) cnt))])))
+     [(null? (cdr sexp))
+      (if (boolean? (car sexp))
+          (car sexp)
+          (look cnt (car sexp)))]
+     [(eq? 'not (car sexp))
+      (not (my-eval (cdr sexp) cnt))]
+     [else ((operator (get-op sexp))
+            (my-eval (get-first-sexp sexp) cnt)
+            (my-eval (get-second-sexp sexp) cnt))])))
