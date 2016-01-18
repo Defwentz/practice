@@ -12,7 +12,8 @@
 ;;     fail true fail
 ;;     fail fail fail
 ;; (table 'A 'B '(and A (or A B)))
-;;     P47 (*) Truth tables for logical expressions (2).
+
+;; P47 (*) Truth tables for logical expressions (2).
 ;;     Continue problem P46 by defining and/2, or/2, etc as being operators. This allows to write the logical expression in the more natural way, as in the example: A and (A or not B). Define operator precedence as usual; i.e. as in Java.
 ;;     Example:
 ;;     * table(A,B, A and (A or not B)).
@@ -22,30 +23,44 @@
 ;;     fail fail fail
 ;; (table 'A 'B '(A and (A or (not B))))
 
-(define table
-  (lambda (a b sexp)
-    (let ((cnt empty-cnt))
-      (set! cnt (put-cnt (put-cnt cnt a #t)
-                         b #t))
-      (display "#t #t ")
-      (display (my-eval sexp cnt))
-      (newline)
-      
-      (set! cnt (put-cnt cnt b #f))
-      (display "#t #f ")
-      (display (my-eval sexp cnt))
-      (newline)
-      
-      (set! cnt (put-cnt (put-cnt cnt a #f)
-                         b #t))
-      (display "#f #t ")
-      (display (my-eval sexp cnt))
-      (newline)
+;; P48 (**) Truth tables for logical expressions (3).
+;;     Generalize problem P47 in such a way that the logical expression may contain any number of logical variables. Define table/2 in a way that table(List,Expr) prints the truth table for the expression Expr, which contains the logical variables enumerated in List.
+;;     Example:
+;;     * table([A,B,C], A and (B or C) equ A and B or A and C).
+;;     true true true true
+;;     true true fail true
+;;     true fail true true
+;;     true fail fail true
+;;     fail true true true
+;;     fail true fail true
+;;     fail fail true true
+;;     fail fail fail true
+;; (table '(A B C) '((A and (B or C)) equ (A and (B or (A and C)))))
 
-      (set! cnt (put-cnt cnt b #f))
-      (display "#f #f ")
-      (display (my-eval sexp cnt))
-      (newline))))
+(define table
+  (lambda (vars sexp)
+    (let ((cnt empty-cnt))
+      (letrec ((go-through-vars (lambda (vs)
+                                  (cond
+                                   [(null? vs)
+                                    (print-vars)
+                                    (display (my-eval sexp cnt))
+                                    (newline)]
+                                   [else
+                                    (let ((avs (car vs)))
+                                      (set! cnt (put-cnt cnt (car vs) #t))
+                                      (go-through-vars (cdr vs))
+                                      (set! cnt (put-cnt cnt (car vs) #f))
+                                      (go-through-vars (cdr vs)))])))
+               (print-vars (lambda ()
+                             (let P ((vs vars))
+                               (cond
+                                [(null? vs)
+                                 (display "")]
+                                [else (display (look cnt (car vs)))
+                                      (display " ")
+                                      (P (cdr vs))])))))
+        (go-through-vars vars)))))
 
 (define operator
   (lambda (o)
@@ -96,3 +111,15 @@
      [else ((operator (get-op sexp))
             (my-eval (get-first-sexp sexp) cnt)
             (my-eval (get-second-sexp sexp) cnt))])))
+
+;; P49 (**) Gray code.
+;;     An n-bit Gray code is a sequence of n-bit strings constructed according to certain rules. For example,
+;;     n = 1: C(1) = ['0','1'].
+;;     n = 2: C(2) = ['00','01','11','10'].
+;;     n = 3: C(3) = ['000','001','011','010',�110�,�111�,�101�,�100�].
+;;     
+;;     Find out the construction rules and write a predicate with the following specification:
+;;     
+;;     % gray(N,C) :- C is the N-bit Gray code
+;;     
+;;     Can you apply the method of "result caching" in order to make the predicate more efficient, when it is to be used repeatedly?
