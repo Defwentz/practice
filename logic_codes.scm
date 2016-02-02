@@ -123,3 +123,16 @@
 ;;     % gray(N,C) :- C is the N-bit Gray code
 ;;     
 ;;     Can you apply the method of "result caching" in order to make the predicate more efficient, when it is to be used repeatedly?
+(define gray
+  (lambda (N)
+    (letrec ([n-zero (lambda (N)
+                          (if (zero? N) ""
+                              (string-append "0"
+                                             (n-zero (sub1 N)))))]
+             [append-x (lambda (x)
+                         (lambda (str)
+                           (string-append x str)))])
+      (if (= N 1)
+          '("0" "1")
+          (append (map (append-x "0") (gray (sub1 N)))
+                  (map (append-x "1") (reverse (gray (sub1 N)))))))))

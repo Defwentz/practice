@@ -12,29 +12,25 @@
 ;;     Example:
 ;;     * (my-last '(a b c d))
 ;;     (D)
+
+;; the list has to contain at least one element, otherwise, you're using it wrong
 (define my-last
   (lambda (l)
-    (cond
-     [(null? l)
-      (quote ())]
-     [(null? (cdr l))
-      l]
-     [else
-      (my-last (cdr l))])))
+    (if (null? (cdr l))
+        l
+        (my-last (cdr l)))))
 
 ;; P02 (*) Find the last but one box of a list.
 ;;     Example:
 ;;     * (my-but-last '(a b c d))
 ;;     (C D)
+
+;; the list has to contain at least two element, otherwise, you're using it wrong
 (define my-but-last
   (lambda (l)
-    (cond
-     [(null? l)
-      (quote ())]
-     [(or (null? (cdr l))
-          (null? (cdr (cdr l))))
-      l]
-     [else (my-but-last (cdr l))])))
+    (if (null? (cddr l))
+        l
+        (my-but-last (cdr l)))))
 
 ;; P03 (*) Find the K'th element of a list.
 ;;     The first element in the list is number 1.
@@ -77,13 +73,13 @@
 ;; after looking at another solution...:
 (define reverse-2
   (lambda (l)
-    (letrec ((R (lambda (l res)
-                  (cond
-                   [(null? l)
-                    res]
-                   [else (R (cdr l)
-                            (cons (car l) res))]))))
-      (R l (quote ())))))
+    (let R ((l l)
+            (res '()))
+      (if (null? l)
+          res
+          (R (cdr l)
+             (cons (car l)
+                   res))))))
 
 ;; P06 (*) Find out whether a list is a palindrome.
 ;;     A palindrome can be read forward or backward; e.g. (x a m a x).
