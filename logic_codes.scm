@@ -136,3 +136,83 @@
           '("0" "1")
           (append (map (append-x "0") (gray (sub1 N)))
                   (map (append-x "1") (reverse (gray (sub1 N)))))))))
+
+;; P50 (***) Huffman code.
+;;     First of all, consult a good book on discrete mathematics or algorithms for a detailed description of Huffman codes!
+;;     
+;;     We suppose a set of symbols with their frequencies, given as a list of fr(S,F) terms. Example: [fr(a,45),fr(b,13),fr(c,12),fr(d,16),fr(e,9),fr(f,5)]. Our objective is to construct a list hc(S,C) terms, where C is the Huffman code word for the symbol S. In our example, the result could be Hs = [hc(a,'0'), hc(b,'101'), hc(c,'100'), hc(d,'111'), hc(e,'1101'), hc(f,'1100')] [hc(a,'01'),...etc.]. The task shall be performed by the predicate huffman/2 defined as follows: 
+;;     
+;;     % huffman(Fs,Hs) :- Hs is the Huffman code table for the frequency table Fs
+;; (huffman '((a 45) (b 13) (c 12) (d 16) (e 9) (f 5)))
+;; 1. construct the tree
+;; 1) find the one with smallest f twice. and remove it from the list.
+;; 2) combine the two.
+;; 3) put it back into the list.
+;; ((a 45) (b 13) (c 12) (d 16) (e 9) (f 5))
+;; ((a 45) (b 13) (c 12) (d 16) ((e f) 14))
+;; ((a 45) (d 16) ((e f) 14) ((b c) 25))
+;; ((a 45) ((b c) 25) ((d (e f)) 30))
+;; ((a 45) (((b c) (d (e f))) 55))
+;; ((a ((b c) (d (e f)))) 100)
+;; 2. assign coding (a ((b c) (d (e f))))
+;; 1) is node atom? -> assign code
+;; 
+;; a '0' ((b c) (d (e f))) '1'
+;; (b c) '01' (d (e f)) '11'
+;; b '010'
+(define Hfind-lowest-freq
+  (lambda (set)
+    (let FLF ([mset (cdr set)]
+              [lowest-one (car set)])
+      (cond
+       [(null? mset) lowest-one]
+       [(< (cadar mset) (cadr lowest-one))
+        (FLF (cdr mset) (car mset))]
+       [else (FLF (cdr mset) lowest-one)]))))
+(define Hrm-elem
+  (lambda (elem ls)
+    (cond
+     [(null? ls) '()]
+     [(equal? elem (car ls))
+      (cdr ls)]
+     [else (cons [car ls]
+                 [Hrm-elem elem
+                          (cdr ls)])])))
+(define Hcombine-elem
+  (lambda (elema elemb)
+    (cons (cons (car elema)
+                (cons (car elemb)
+                      (quote ())))
+          (cons (+ (cadr elema)
+                   (cadr elemb))
+                (quote ())))))
+
+(define Hconstruct-tree
+  (lambda (set)
+    (cond
+     [(null? (cdr set)) (caar set)]
+     [else (let ([a 0]
+                 [b 0])
+             (set! a (Hfind-lowest-freq set))
+             (set! b (Hfind-lowest-freq (Hrm-elem a set)))
+             (Hconstruct-tree (cons (Hcombine-elem a b)
+                                    (Hrm-elem a (Hrm-elem b set)))))])))
+
+(define Hassign-code
+  (lambda (node)
+    (let HAC ([node node]
+              [prefix ""])
+      (cond
+       [(atom? node)
+        (cons (cons node
+                    (cons prefix
+                          (quote ())))
+              (quote ()))]
+       [else (append (HAC (car node)
+                            (string-append prefix "0"))
+                     (HAC (cadr node)
+                          (string-append prefix "1")))]))))
+
+(define huffman
+  (lambda (Fs)
+    (Hassign-code (Hconstruct-tree Fs))))
